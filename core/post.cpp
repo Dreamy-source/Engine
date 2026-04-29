@@ -3,11 +3,14 @@
 //#include <memory>
 //#include <string>
 //#include <vector>
-//#include <ctime>
-#include <fstream>
-#include <iostream>
-#include <sys/stat.h>
-#include <nlohmann/json.hpp>
+#include <ctime>
+#include <fstream>               // Basec
+#include <iostream>              // Base
+#include <sys/stat.h>            // Base
+#include "raylib.h"              // 3D
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"              // Gui
+#include <nlohmann/json.hpp>     // JSON
 
 namespace ErrorCodes {
     enum Level { NORMAL = 0, WARN = 1, ERROR = 2, FATAL = 3 };
@@ -99,7 +102,49 @@ int main() {
         std::cout << "[POST] Engine started!" << std::endl;
         std::cout << std::endl;
 
-        return ErrorCodes::NORMAL;
+        InitWindow(800, 600, "Engine");
+
+        Camera3D camera = { 0 };
+        camera.position = (Vector3){ 10.0f, 10.0f, 10.0f };
+        camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+        camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
+        camera.fovy = 45.0f;
+        camera.projection = CAMERA_PERSPECTIVE;
+
+        while (!WindowShouldClose()) {
+            UpdateCamera(&camera, CAMERA_FREE);
+
+            BeginDrawing();
+            ClearBackground(GRAY);
+
+            BeginMode3D(camera);
+            //DrawCube((Vector3){0, 0, 0}, 1.0f, 1.0f, 1.0f, WHITE);
+            DrawGrid(20, 1.5f);
+
+            EndMode3D();
+
+            Rectangle panel = { 600, 10, 190, 250 };
+            GuiPanel(panel, "Engine Tools");
+
+            if (GuiButton((Rectangle){ 610, 40, 170, 30 }, "Reset camera")) {
+                camera.position = (Vector3){ 10.0f, 10.0f, 10.0f };
+                camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
+            }
+
+            GuiSlider((Rectangle){ 610, 80, 170, 20 }, "FOV", NULL, &camera.fovy, 30, 120);
+            
+            static float zoom = 1.0f;
+            GuiSlider((Rectangle){ 610, 110, 170, 20 }, "Zoom", NULL, &zoom, 0.1f, 3.0f);
+            
+            static bool showGrid = true;
+            GuiCheckBox((Rectangle){ 610, 140, 20, 20 }, "Grid", &showGrid);
+
+            GuiLabel((Rectangle){ 10, 570, 300, 25 }, TextFormat("FPS: %i", GetFPS()));
+
+            EndDrawing();
+        }
+
+        CloseWindow();
     } else {
         std::cout << std::endl;
         std::cout << "[" <<  ErrorCodes::levelToString(ErrorCodes::FATAL) << "]" << ": Post doesn't have activity parameters!" << std::endl;
